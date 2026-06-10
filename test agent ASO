@@ -1,0 +1,128 @@
+"""
+ASO Keyword Research Agent
+Agent nghiên cứu keyword cho App Store Optimization
+"""
+
+import anthropic
+import json
+
+# ============================================================
+# CẤU HÌNH — điền thông tin của bạn vào đây
+# ============================================================
+ANTHROPIC_API_KEY = "your-api-key-here"  # Thay bằng API key thật
+# ============================================================
+
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+SYSTEM_PROMPT = """Bạn là chuyên gia ASO (App Store Optimization) với 10 năm kinh nghiệm.
+Nhiệm vụ của bạn là nghiên cứu và phân tích keyword cho ứng dụng mobile.
+
+Khi người dùng cung cấp tên app và category, bạn sẽ:
+
+1. **Keyword chính (Primary Keywords)** — 5 keyword có traffic cao nhất
+   - Keyword | Search Volume (ước tính) | Độ cạnh tranh | Ghi chú
+
+2. **Keyword đuôi dài (Long-tail Keywords)** — 5 keyword ít cạnh tranh hơn
+   - Keyword | Lý do chọn
+
+3. **Keyword của competitor** — 3 đối thủ chính và keyword họ đang dùng
+
+4. **Đề xuất Title & Subtitle** — tối ưu cho App Store và Google Play
+   - App Store Title (tối đa 30 ký tự)
+   - Google Play Title (tối đa 50 ký tự)
+   - Subtitle/Short Description (tối đa 30 ký tự)
+
+5. **Top 3 keyword nên ưu tiên** — kèm lý do cụ thể
+
+Luôn trả lời bằng tiếng Việt, rõ ràng và có thể áp dụng ngay."""
+
+
+def aso_keyword_research(app_name: str, category: str, description: str = "") -> str:
+    """
+    Nghiên cứu keyword ASO cho app
+
+    Args:
+        app_name: Tên ứng dụng (VD: "ZaloPay")
+        category: Danh mục app (VD: "Fintech / Thanh toán điện tử")
+        description: Mô tả ngắn về app (tùy chọn)
+
+    Returns:
+        Kết quả phân tích keyword dạng text
+    """
+
+    user_message = f"""Hãy nghiên cứu keyword ASO cho app sau:
+
+**Tên app:** {app_name}
+**Category:** {category}
+**Mô tả:** {description if description else "Không có"}
+
+Phân tích keyword phù hợp cho cả App Store (iOS) và Google Play (Android), 
+tập trung vào thị trường Việt Nam."""
+
+    print(f"\n🔍 Đang nghiên cứu keyword cho: {app_name}...")
+    print("⏳ Vui lòng chờ...\n")
+
+    message = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=2000,
+        system=SYSTEM_PROMPT,
+        messages=[
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    return message.content[0].text
+
+
+def save_result(app_name: str, result: str):
+    """Lưu kết quả ra file"""
+    filename = f"aso_keywords_{app_name.replace(' ', '_').lower()}.txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(f"ASO KEYWORD RESEARCH — {app_name}\n")
+        f.write("=" * 60 + "\n\n")
+        f.write(result)
+    print(f"\n💾 Đã lưu kết quả vào file: {filename}")
+
+
+def main():
+    print("=" * 60)
+    print("🚀 ASO KEYWORD RESEARCH AGENT")
+    print("=" * 60)
+
+    # ---- CHẠY THỬ VÍ DỤ ----
+    # Thay thông tin app của bạn vào đây:
+    app_name = "ZaloPay"
+    category = "Fintech / Thanh toán điện tử"
+    description = "Ví điện tử và thanh toán số đa năng"
+
+    # Nghiên cứu keyword
+    result = aso_keyword_research(app_name, category, description)
+
+    # In kết quả
+    print("📊 KẾT QUẢ PHÂN TÍCH KEYWORD:")
+    print("=" * 60)
+    print(result)
+
+    # Lưu kết quả
+    save_result(app_name, result)
+
+    # ---- CHẾ ĐỘ TƯƠNG TÁC ----
+    print("\n" + "=" * 60)
+    print("💬 Bạn muốn research app khác không?")
+    while True:
+        another = input("\nNhập tên app (hoặc 'quit' để thoát): ").strip()
+        if another.lower() == "quit":
+            print("👋 Tạm biệt!")
+            break
+        if another:
+            category_input = input("Nhập category: ").strip()
+            desc_input = input("Mô tả ngắn (Enter để bỏ qua): ").strip()
+            result = aso_keyword_research(another, category_input, desc_input)
+            print("\n📊 KẾT QUẢ:")
+            print("=" * 60)
+            print(result)
+            save_result(another, result)
+
+
+if __name__ == "__main__":
+    main()
